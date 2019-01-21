@@ -20,7 +20,12 @@ let przelewanka t =
   (* sprawdzam dwa warunki konieczne, aby udało się uzyskać stan końcowy: 
   NWD wszystkich pojemności musi dzielić każdy ze stanow końcowych i
   ktoryś stan końcowy musi wynosić 0 albo całkowita pojemność danej szklanki *)
-  if not (for_all (fun h -> h mod x = 0) kon) || (not (exists ((=) 0) kon) && not (exists (fun (a, b) -> a = b) t)) then -1 else
+  if not (for_all (fun h -> h mod x = 0) kon) || 
+    (
+      not (exists ((=) 0) kon) && 
+      not (exists (fun (a, b) -> a = b) t)
+    ) 
+  then -1 else 
   let dolej tb x =
   (
     tb.(x) <- tab.(x);
