@@ -10,6 +10,7 @@ let rec nwd a b = if a = 0 then b else nwd (b mod a) a;;
 
 
 let przelewanka t =
+  if t = [||] then 0 else
   let hash = Hashtbl.create 1696969 
   and n = Array.length t in
   let tab = init n (fun i -> fst t.(i)) 
@@ -20,12 +21,13 @@ let przelewanka t =
   (* sprawdzam dwa warunki konieczne, aby udało się uzyskać stan końcowy: 
   NWD wszystkich pojemności musi dzielić każdy ze stanow końcowych i
   ktoryś stan końcowy musi wynosić 0 albo całkowita pojemność danej szklanki *)
-  if not (for_all (fun h -> h mod x = 0) kon) || 
+  if not (for_all (fun h -> x = 0 || h mod x = 0) kon) || 
     (
       not (exists ((=) 0) kon) && 
       not (exists (fun (a, b) -> a = b) t)
     ) 
-  then -1 else 
+  then -1 else
+  let q = create () and znalezione = ref false in
   let dolej tb x =
   (
     tb.(x) <- tab.(x);
@@ -49,13 +51,18 @@ let przelewanka t =
       tb.(y) <- tab.(y);
     );
     tb
-  ) 
+  )
+  and dodaj t tx =
+    if not (Hashtbl.mem hash tx) then (
+      if tx = kon then znalezione := true;
+      Hashtbl.add hash tx ((find hash t) + 1);
+      add tx q;
+    )
   in
   (* w kolejce q trzymam wszystkie uzyskane i nieprzetworzone stany szklanek,
   jeżeli uda się dostać nieuzyskany wcześniej stan, to dodaję go do kolejki i 
   zapamiętuję po ilu krokach go uzyskałem w hashtable, dla każdego uzyskanego 
   stanu znajduję wszystkie stany, jakie mogę z niego osiągnąć jedną operacją *)
-  let q = create () and znalezione = ref false in
   (
     add start q;
     if start = kon then znalezione := true;
@@ -65,23 +72,11 @@ let przelewanka t =
       let t = take q in 
       (
         for i = 0 to n-1 do
-          if not (Hashtbl.mem hash (dolej (Array.copy t) i)) then (
-            if dolej (Array.copy t) i = kon then znalezione := true;
-            Hashtbl.add hash (dolej (Array.copy t) i) ((find hash t) + 1);
-            add (dolej (Array.copy t) i) q;
-          );
-          if not (Hashtbl.mem hash (wylej (Array.copy t) i)) then (
-            if wylej (Array.copy t) i = kon then znalezione := true;
-            Hashtbl.add hash (wylej (Array.copy t) i) ((find hash t) + 1);
-            add (wylej (Array.copy t) i) q;
-          );
-          if t.(i) <> 0 then for j = 0 to n-1 do
-            if not (Hashtbl.mem hash (przelej (Array.copy t) i j)) then (
-              if przelej (Array.copy t) i j = kon then znalezione := true;
-              Hashtbl.add hash (przelej (Array.copy t) i j) ((find hash t) + 1);
-              add (przelej (Array.copy t) i j) q;
-            );
-          done;
+         dodaj t (wylej (Array.copy t) i);
+         dodaj t (dolej (Array.copy t) i);
+         if t.(i) <> 0 then for j = 0 to n-1 do
+           if i <> j then dodaj t (przelej (Array.copy t) i j);
+         done;
         done;
       );
     done;
